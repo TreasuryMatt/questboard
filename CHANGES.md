@@ -6,6 +6,15 @@ A running log of completed changes, ordered most-recent first.
 
 ## 2026-06-11
 
+### Merge upstream (thillygooth/questboard) — 28 commits
+
+- Pulled the original author's recent work into the fork via `git merge upstream/main`. Notable additions: bounty board, portrait/fridge display mode, configurable week-start day, state backup/restore (export/import), edit player name/class after setup, optional chore tap confirmation, level-gated monster rebalance, mute toggle, animated-background toggle, history timestamps, CC BY-NC 4.0 license, README/deploy-script updates.
+- Conflict resolutions:
+  - `PlayerCard.jsx` — kept our `MONSTER_SPRITES` refactor; merged our sprite `filter` with upstream's `margin: 0 auto` centering on the static-`img` monster branch; removed a duplicate `MONSTER_SPRITES` import left by the auto-merge (it broke the Vite build).
+  - `index.css` — kept upstream's new portrait + bounty styles, but dropped the `body.scale-heroic/epic { zoom }` rules it re-introduced (our earlier "zoom content only, not the background" fix removed those on purpose).
+  - `frost_knight.png` — kept our version of the class icon.
+- Verified with `npm run build` (passes). Docker rebuild still needed to see it live at `http://localhost:3062`.
+
 ### Fix settings menu unscrollable at non-mini UI scales
 
 - `frontend/src/App.jsx` — the setup/settings overlay (`SetupWizard`, a full-screen `position: fixed` modal capped at `maxHeight: 90vh`) was rendered inside the `zoom: uiZoom` UI-scale wrapper. CSS `zoom` multiplies `vh` units, so at Heroic (1.25×)/Epic (1.75×) the overlay grew taller than the viewport — the footer (Save) sat below the screen and the header (close) above it, with nowhere to scroll to reach them. Mini worked only because its zoom is 1.
