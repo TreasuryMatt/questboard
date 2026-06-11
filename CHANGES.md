@@ -6,6 +6,20 @@ A running log of completed changes, ordered most-recent first.
 
 ## 2026-06-11
 
+### Distinct pixel icons + readable hamburger glyph for the header menu
+
+- The secondary toolbar items (Settings/Reset week/Export Save/Import Save) all shared tile 115 (red potion). Gave each a distinct, thematic tilemap icon: Settings = control panel (65), Reset week = scroll (56), Export Save = open chest (91), Import Save = closed chest (89). Applied to both the Epic hamburger dropdown and the inline toolbar at other scales.
+- `frontend/src/App.jsx` — the `☰` glyph wasn't in the pixel font (rendered as a tofu box), so replaced it with a CSS-drawn three-bar hamburger (`<span className="hamburger" />`).
+- `frontend/src/index.css` — added `.hamburger` bar styling via `::before`/`::after`.
+- Verified with `npm run build`; rebuilt Docker, live at `http://localhost:3062`.
+
+### Collapse header toolbar into a hamburger at Epic scale
+
+- At Epic UI scale (1.75×) the secondary toolbar (Sound/Settings/Reset week/Export Save/Import Save) overflowed the viewport and the Bounties tab wrapped to two lines.
+- `frontend/src/App.jsx` — added an `isEpic` flag; on Epic the five secondary buttons collapse into a single `☰` hamburger that opens a dropdown (`menuOpen` state, with an outside-click/Escape close handler). Heroic and Mini keep the full inline toolbar.
+- `frontend/src/index.css` — added `.header-menu`/`.menu-toggle`/`.header-dropdown` styles; added `white-space: nowrap` to `.tab` so Bounties no longer wraps.
+- Verified with `npm run build` (passes). Docker rebuild needed to see it live at `http://localhost:3062`.
+
 ### Merge upstream (thillygooth/questboard) — 28 commits
 
 - Pulled the original author's recent work into the fork via `git merge upstream/main`. Notable additions: bounty board, portrait/fridge display mode, configurable week-start day, state backup/restore (export/import), edit player name/class after setup, optional chore tap confirmation, level-gated monster rebalance, mute toggle, animated-background toggle, history timestamps, CC BY-NC 4.0 license, README/deploy-script updates.
