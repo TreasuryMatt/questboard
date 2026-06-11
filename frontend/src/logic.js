@@ -202,10 +202,12 @@ export function todayKey() {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
 
-export function weekKey() {
+export function weekKey(weekStartDay = 1) {
   const d = new Date();
   const s = new Date(d);
-  s.setDate(d.getDate() - d.getDay());
+  const dow = d.getDay();
+  const diff = (dow - weekStartDay + 7) % 7;
+  s.setDate(d.getDate() - diff);
   return `${s.getFullYear()}-${s.getMonth()}-${s.getDate()}`;
 }
 
@@ -233,9 +235,12 @@ export function randomMonster(player) {
   return { ...m, maxHP: isKid ? m.kidHP : m.adultHP, gold: isKid ? m.kidGold : m.gold };
 }
 
-export function dateSeededMonster(player, dateKey) {
+export function dateSeededMonster(player, dateKey, playerLevel = 1) {
+  const maxTier = playerLevel >= 9 ? 5 : playerLevel >= 7 ? 4 :
+                  playerLevel >= 5 ? 3 : playerLevel >= 3 ? 2 : 1;
+  const pool = MONSTERS.filter(m => (m.tier || 1) <= maxTier);
   const hash = `${player.id}${dateKey}`.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-  const m = MONSTERS[hash % MONSTERS.length];
+  const m = pool[hash % pool.length];
   const isKid = player.mode === 'kids';
   return { ...m, maxHP: isKid ? m.kidHP : m.adultHP, gold: isKid ? m.kidGold : m.gold };
 }

@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { todayKey, dateSeededMonster, resolveMonster, getLevelFromXP, critChanceForLevel, luckForLevel, getPlayerTitle, getTitleForBadge } from '../logic';
 import { BADGES, TITLES, POWER_UPS, OVERKILL_CHARGE_GOAL, CLASSES } from '../data';
+import { MONSTER_SPRITES } from '../monsterSprites';
 import TileSprite from './TileSprite';
 import MonsterSprite from './MonsterSprite';
-import { MONSTER_SPRITES } from '../monsterSprites';
 
 function HpSegBar({ hp, maxHP, low }) {
   const segments = Math.min(maxHP, 20);
@@ -64,7 +64,8 @@ function BadgeTooltip({ badge }) {
 
 export default function PlayerCard({ player, gold, xp, isSelected, onClick, monsterDamage, lastHit, streak, monster, prestige, badges, selectedTitleBadge, onSelectTitle, onPrestige, activePowerUps = [], overkillCharge = 0, storedPowerTokens = 0, projectedOverkillRewardId = null }) {
   const tKey = todayKey();
-  const m = resolveMonster(monster, player) || dateSeededMonster(player, tKey);
+  const { level: playerLevel } = getLevelFromXP(xp || 0);
+  const m = resolveMonster(monster, player) || dateSeededMonster(player, tKey, playerLevel);
   const dmg = (monsterDamage?.[player.id]?.[tKey]) || 0;
   const hp = Math.max(0, Math.min(m.maxHP, m.maxHP - dmg));
   const dead = hp === 0;
@@ -238,6 +239,7 @@ export default function PlayerCard({ player, gold, xp, isSelected, onClick, mons
                       maxWidth: (mc.dp ?? 48) * 1.6,
                       imageRendering: 'pixelated',
                       display: 'block',
+                      margin: '0 auto',
                       filter: mc.f,
                     }}
                   />
