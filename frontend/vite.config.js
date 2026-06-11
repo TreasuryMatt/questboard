@@ -7,6 +7,10 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
+  // Big Sur ships Safari 14 — keep the built bundle parseable there.
+  build: {
+    target: 'safari14',
+  },
   server: {
     proxy: {
       '/api': {
