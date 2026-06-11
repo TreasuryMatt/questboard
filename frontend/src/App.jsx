@@ -746,13 +746,15 @@ export default function App() {
     );
   }
 
+  // NOTE: the setup/settings overlay is a full-screen `position: fixed` modal
+  // sized in `vh`. The `zoom` UI-scale wrapper multiplies `vh`, making the
+  // overlay taller than the viewport so its header/footer (close + save) become
+  // unreachable. Render these modals at true scale, outside the zoom wrapper.
   if (needsSetup) {
     return (
       <>
         <DungeonBackground />
-        <div style={{ zoom: uiZoom }}>
-          <SetupWizard onComplete={handleSetupComplete} />
-        </div>
+        <SetupWizard onComplete={handleSetupComplete} />
       </>
     );
   }
@@ -761,13 +763,11 @@ export default function App() {
     return (
       <>
         <DungeonBackground />
-        <div style={{ zoom: uiZoom }}>
-          <SetupWizard
-            initialConfig={config}
-            onComplete={handleEditComplete}
-            onCancel={() => setShowSettings(false)}
-          />
-        </div>
+        <SetupWizard
+          initialConfig={config}
+          onComplete={handleEditComplete}
+          onCancel={() => setShowSettings(false)}
+        />
       </>
     );
   }
