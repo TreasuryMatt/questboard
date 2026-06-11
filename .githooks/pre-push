@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+#
+# Auto-build & publish the standalone Intel macOS Questboard.app on push, but
+# ONLY when the version in frontend/package.json is new (i.e. no release exists
+# for it yet). Normal pushes that don't bump the version are unaffected.
+#
+# Enabled via:  git config core.hooksPath .githooks
+# Skip for one push:  git push --no-verify
+#
+# A failed app build NEVER blocks your code push — it just warns loudly so you
+# can re-run ./scripts/build-mac-app.sh manually.
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+# Only act when pushing the main branch.
+BRANCH="$(git -C "$ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')"
+[ "$BRANCH" = "main" ] || exit 0
+
+# Need node + gh; if missing, don't block the push.
+command -v node >/dev/null 2>&1 || { echo "pre-push: node not found — skipping Mac app build."; exit 0; }
+command -v gh   >/dev/null 2>&1 || { echo "pre-push: gh not found — skipping Mac app build.";   exit 0; }
+
+VERSION="$(node -p "require('$ROOT/frontend/package.json').version" 2>/dev/null || true)"
+[ -n "$VERSION" ] || exit 0
+TAG="v$VERSION"
+REPO="$(git -C "$ROOT" remote get-url origin | sed -E 's#(git@github.com:|https://github.com/)##; s#\.git$##')"
+
+# Already published this version? Nothing to do.
+if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+  echo "pre-push: $TAG already published — skipping Mac app build (bump the version to ship a new one)."
+  exit 0
+fi
+
+echo "pre-push: new version $TAG detected — building & publishing the Intel Mac app..."
+if "$ROOT/scripts/build-mac-app.sh" "$VERSION"; then
+  echo "pre-push: published $TAG. On the kids' Mac, re-download and relaunch."
+else
+  echo ""
+  echo "!! pre-push: Mac app build FAILED — your code push will still proceed."
+  echo "!! Re-run manually when ready:  ./scripts/build-mac-app.sh $VERSION"
+fi
+
+# Never block the code push on the app build.
+exit 0
