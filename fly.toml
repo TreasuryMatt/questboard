@@ -1,0 +1,25 @@
+app = 'questboard-dcmjs'
+primary_region = 'ord'
+
+[build]
+
+[mounts]
+  source = 'questboard_data'
+  destination = '/data'
+
+[http_service]
+  internal_port = 8099
+  force_https = true
+  auto_stop_machines = false
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = '30s'
+    interval = '30s'
+    method = 'GET'
+    timeout = '10s'
+    path = '/api/state'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '256mb'
