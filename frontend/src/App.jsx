@@ -70,7 +70,7 @@ function applyAutoResets(raw, players, weekStartDay = 1) {
           newStreaks[pl.id] = 0;
           const pKey = `${pl.id}_${yKey}`;
           const shieldActive = isPowerUpActive(state.activePowerUps, pl.id, 'shield_aura');
-          if (!shieldActive && !(state.monsterPenalties || {})[pKey]) {
+          if (!shieldActive && !pl.paused && !(state.monsterPenalties || {})[pKey]) {
             state.gold = { ...state.gold, [pl.id]: Math.max(0, (state.gold[pl.id] || 0) - m.atk) };
             state.monsterPenalties = { ...state.monsterPenalties, [pKey]: true };
             state.history = [...(state.history || []), { type: 'penalty', player: pl.name, name: m.name, pts: m.atk, ts: Date.now() }];

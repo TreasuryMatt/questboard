@@ -49,6 +49,7 @@ function makeNewPlayer(existingPlayers = []) {
     id: `player_${n}`,
     name: '',
     mode: 'adults',
+    paused: false,
     class: CLASSES[n % CLASSES.length].id,
     color: PLAYER_COLORS[colorIdx].color,
     textColor: PLAYER_COLORS[colorIdx].textColor,
@@ -707,6 +708,18 @@ function TabParty({ players, onUpdatePlayer, onAddPlayer, onRemovePlayer }) {
                       />
                     ))}
                   </div>
+                </div>
+                <div style={{ marginTop: 12 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={!!p.paused}
+                      onChange={e => onUpdatePlayer(i, 'paused', e.target.checked)}
+                      style={{ width: 14, height: 14, accentColor: '#f5c870', cursor: 'pointer' }}
+                    />
+                    <span style={{ color: '#c8d0e0', fontSize: 12 }}>Pause gold penalties</span>
+                    <span style={{ color: '#5a5a8a', fontSize: 10 }}>(away from home)</span>
+                  </label>
                 </div>
               </div>
             )}
