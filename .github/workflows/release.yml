@@ -41,12 +41,14 @@ jobs:
       - name: Compute image tags
         id: tags
         run: |
-          TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          IMAGE="${{ env.REGISTRY }}/$(echo '${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')"
+          TAGS="${IMAGE}:latest"
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
             VERSION="${GITHUB_REF_NAME#v}"
-            TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION"
+            TAGS="$TAGS,${IMAGE}:$VERSION"
             echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           fi
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
           echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
 
       - name: Build and push multi-arch image
@@ -63,7 +65,7 @@ jobs:
         uses: superfly/flyctl-actions/setup-flyctl@master
 
       - name: Deploy to Fly.io
-        run: flyctl deploy --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        run: flyctl deploy --image ${{ steps.tags.outputs.image }}:latest
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
