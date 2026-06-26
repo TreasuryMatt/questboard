@@ -295,7 +295,11 @@ export default function PlayerCard({ player, gold, xp, isSelected, onClick, mons
             )}
           </div>
         )}
-        {!dead && <div className="atk-penalty">💀 -{m.atk}g at midnight</div>}
+        {!dead && (
+          player.paused
+            ? <div className="atk-penalty atk-penalty--paused">⏸️ penalties paused</div>
+            : <div className="atk-penalty">💀 -{m.atk}g at midnight</div>
+        )}
       </div>
     </div>
   );

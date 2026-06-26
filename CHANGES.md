@@ -6,6 +6,12 @@ A running log of completed changes, ordered most-recent first.
 
 ## 2026-06-26
 
+### Hide the midnight penalty text when a player's penalties are paused
+
+- The player card always showed `💀 -Ng at midnight`, even for players with **Pause gold penalties** checked — misleading, since the overnight strike is skipped for them (`App.jsx` already guards on `pl.paused`).
+- `frontend/src/components/PlayerCard.jsx` — when `player.paused` is set, the card now renders `⏸️ penalties paused` (class `atk-penalty--paused`) instead of the gold-loss warning.
+- Verified with `npm run build`; rebuilt Docker, live at `http://localhost:3062`.
+
 ### Manually set a player's gold in Edit Settings
 
 - Added a **Gold** number field to **Edit Settings → Party**, inside each player's expanded row, directly below the "Pause gold penalties" checkbox.
