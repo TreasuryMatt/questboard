@@ -121,6 +121,14 @@ def current_account(authorization: str = Header(None)):
     return row
 
 
+# ---- Health (unauthenticated; used by the container probe + Fly check) -----
+
+
+@app.get("/health")
+def health():
+    return {"ok": True}
+
+
 # ---- Account / session endpoints -------------------------------------------
 
 

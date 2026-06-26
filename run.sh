@@ -10,7 +10,7 @@ BACKEND_PID=$!
 
 # Wait for backend to be ready
 for i in $(seq 1 10); do
-    if curl -sf http://127.0.0.1:5050/state > /dev/null 2>&1; then
+    if curl -sf http://127.0.0.1:5050/health > /dev/null 2>&1; then
         break
     fi
     sleep 0.5
