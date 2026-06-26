@@ -6,6 +6,13 @@ A running log of completed changes, ordered most-recent first.
 
 ## 2026-06-26
 
+### Fix settings list scrolling back to the top on every edit
+
+- In **Edit Settings → Quests/Rewards**, changing any per-row control (the everyone/adults/kids switcher, points, ALL/1P, gold cost) made the list jump back to the top, so you couldn't adjust several rows in a row.
+- Root cause: `ChoreRow`/`Section` and `RewardRow`/`TierSection` were defined *inside* `ChoreSection`/`RewardSection`, so each render created new function identities. React treated them as new component types and remounted the entire list, tearing down the DOM and resetting the scroll container.
+- `frontend/src/components/SetupWizard.jsx` — those inner renderers use no hooks, so they're now invoked as plain functions (`ChoreRow({…})` instead of `<ChoreRow/>`); their output inlines into the parent tree, the DOM is reused, and scroll position is preserved. React `key`s moved onto each row's root element.
+- Verified with `npm run build`; rebuilt Docker, live at `http://localhost:3062`, and deployed to Fly.io.
+
 ### Hide the midnight penalty text when a player's penalties are paused
 
 - The player card always showed `💀 -Ng at midnight`, even for players with **Pause gold penalties** checked — misleading, since the overnight strike is skipped for them (`App.jsx` already guards on `pl.paused`).
