@@ -12,9 +12,9 @@ import DungeonMap from './components/DungeonMap';
 import TileSprite from './components/TileSprite';
 import Celebration from './components/Celebration';
 import SetupWizard from './components/SetupWizard';
+import AccountGate from './components/AccountGate';
+import { apiFetch, apiPost, getToken, setToken, clearToken, setUnauthorizedHandler } from './api';
 import { playHit, playKill, playFanfare, playUndo, playRedeem, playCrit, playKeyPickup, isMuted, setMuted } from './sounds';
-
-const API = '/api';
 
 function makeDefaultState(players) {
   const zeros = Object.fromEntries(players.map(p => [p.id, 0]));
@@ -173,6 +173,8 @@ function getProjectedOverkillReward(playerId) {
 }
 
 export default function App() {
+  const [authed, setAuthed] = useState(!!getToken());
+  const [accountName, setAccountName] = useState('');
   const [config, setConfig] = useState(null);
   const [needsSetup, setNeedsSetup] = useState(false);
   const [serverState, setServerState] = useState(null);
@@ -224,21 +226,34 @@ export default function App() {
 
   const saveState = useCallback(async (state) => {
     try {
-      await fetch(`${API}/state`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(state),
-      });
+      await apiPost('/state', state);
     } catch (e) {
       console.error('Save failed', e);
     }
   }, []);
 
-  // Initial load: fetch config, then game state
+  // Send the user back to the account picker if the session token is rejected.
   useEffect(() => {
+    setUnauthorizedHandler(() => {
+      setAuthed(false);
+      setConfig(null);
+      setServerState(null);
+      setNeedsSetup(false);
+    });
+  }, []);
+
+  // Initial load: fetch config, then game state (only once authenticated)
+  useEffect(() => {
+    if (!authed) { setLoading(false); return; }
+    setLoading(true);
     async function init() {
       try {
-        const cfgRes = await fetch(`${API}/config`);
+        try {
+          const accRes = await apiFetch('/account');
+          setAccountName((await accRes.json()).name || '');
+        } catch (e) { /* non-fatal */ }
+
+        const cfgRes = await apiFetch('/config');
         const cfg = await cfgRes.json();
 
         if (cfg.needs_setup) {
@@ -249,16 +264,12 @@ export default function App() {
 
         setConfig(cfg);
 
-        const stateRes = await fetch(`${API}/state`);
+        const stateRes = await apiFetch('/state');
         const fetched = await stateRes.json();
         const { state: after, changed, penaltyMsgs } = applyAutoResets(fetched, cfg.players, cfg.weekStartDay ?? 1);
 
         if (changed) {
-          await fetch(`${API}/state`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(after),
-          });
+          await apiPost('/state', after);
         }
 
         setServerState(after);
@@ -269,12 +280,12 @@ export default function App() {
       setLoading(false);
     }
     init();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [authed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadState = useCallback(async () => {
     if (Date.now() - lastActionAt.current < 3000) return;
     try {
-      const res = await fetch(`${API}/state`);
+      const res = await apiFetch('/state');
       const fetched = await res.json();
       const { state: after, changed } = applyAutoResets(fetched, players, config?.weekStartDay ?? 1);
       if (changed) await saveState(after);
@@ -775,16 +786,8 @@ export default function App() {
         }
         if (!confirm('This will replace all current data. Continue?')) return;
         await Promise.all([
-          fetch(`${API}/config`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(backup.config),
-          }),
-          fetch(`${API}/state`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(backup.state),
-          }),
+          apiPost('/config', backup.config),
+          apiPost('/state', backup.state),
         ]);
         setConfig(backup.config);
         setServerState(backup.state);
@@ -801,21 +804,74 @@ export default function App() {
     const freshState = makeDefaultState(wizardConfig.players);
     const { state: after } = applyAutoResets(freshState, wizardConfig.players, wizardConfig.weekStartDay ?? 1);
     await Promise.all([
-      fetch(`${API}/config`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(wizardConfig),
-      }),
-      fetch(`${API}/state`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(after),
-      }),
+      apiPost('/config', wizardConfig),
+      apiPost('/state', after),
     ]);
     setConfig(wizardConfig);
     setServerState(after);
     setNeedsSetup(false);
   }, []);
+
+  const handleAuthenticated = useCallback((token) => {
+    setToken(token);
+    setConfig(null);
+    setServerState(null);
+    setNeedsSetup(false);
+    setLoading(true);
+    setAuthed(true);
+  }, []);
+
+  const renameAccount = useCallback(async () => {
+    setMenuOpen(false);
+    const next = prompt('Account name:', accountName);
+    if (next === null) return;
+    const trimmed = next.trim();
+    if (!trimmed || trimmed === accountName) return;
+    try {
+      const res = await apiPost('/account', { name: trimmed });
+      const data = await res.json();
+      setAccountName(data.name || trimmed);
+      showToast('Account renamed!');
+    } catch (e) {
+      showToast('Rename failed');
+    }
+  }, [accountName, showToast]);
+
+  const switchAccount = useCallback(async () => {
+    try { await apiPost('/logout'); } catch (e) { /* ignore */ }
+    clearToken();
+    setMenuOpen(false);
+    setConfig(null);
+    setServerState(null);
+    setNeedsSetup(false);
+    setSelected(null);
+    setAuthed(false);
+  }, []);
+
+  const deleteAccount = useCallback(async () => {
+    setMenuOpen(false);
+    const name = accountName || 'this account';
+    // Irreversible: require the user to type the name to confirm.
+    const typed = prompt(`This permanently deletes "${name}" and ALL its data.\nType the account name to confirm:`);
+    if (typed === null) return;
+    if (typed.trim() !== (accountName || '').trim()) {
+      showToast('Name did not match — not deleted');
+      return;
+    }
+    try {
+      await apiFetch('/account', { method: 'DELETE' });
+    } catch (e) {
+      showToast('Delete failed');
+      return;
+    }
+    clearToken();
+    setConfig(null);
+    setServerState(null);
+    setNeedsSetup(false);
+    setSelected(null);
+    setAccountName('');
+    setAuthed(false);
+  }, [accountName, showToast]);
 
   const handleEditComplete = useCallback(async (wizardConfig) => {
     const newIds = new Set(wizardConfig.players.map(p => p.id));
@@ -836,16 +892,8 @@ export default function App() {
     };
 
     await Promise.all([
-      fetch(`${API}/config`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(wizardConfig),
-      }),
-      fetch(`${API}/state`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(mergedState),
-      }),
+      apiPost('/config', wizardConfig),
+      apiPost('/state', mergedState),
     ]);
 
     setConfig(wizardConfig);
@@ -890,6 +938,15 @@ export default function App() {
   useEffect(() => {
     document.body.classList.toggle('portrait', config?.displayOrientation === 'portrait');
   }, [config?.displayOrientation]);
+
+  if (!authed) {
+    return (
+      <>
+        <DungeonBackground />
+        <AccountGate onAuthenticated={handleAuthenticated} />
+      </>
+    );
+  }
 
   if (loading) {
     return (
@@ -971,6 +1028,9 @@ export default function App() {
                 <button onClick={() => { setMenuOpen(false); resetWeek(); }}><TileSprite tile={56} display={14} /> Reset week</button>
                 <button onClick={() => { setMenuOpen(false); exportSave(); }}><TileSprite tile={91} display={14} /> Export Save</button>
                 <button onClick={() => { setMenuOpen(false); importSave(); }}><TileSprite tile={89} display={14} /> Import Save</button>
+                <button onClick={renameAccount}>✏️ Rename account</button>
+                <button onClick={switchAccount}>🔄 Switch account</button>
+                <button onClick={deleteAccount}>🗑️ Delete account</button>
               </div>
             )}
           </div>
@@ -981,6 +1041,9 @@ export default function App() {
             <button className="reset-btn" onClick={resetWeek}><TileSprite tile={56} display={12} /> Reset week</button>
             <button className="reset-btn" onClick={exportSave}><TileSprite tile={91} display={12} /> Export Save</button>
             <button className="reset-btn" onClick={importSave}><TileSprite tile={89} display={12} /> Import Save</button>
+            <button className="reset-btn" onClick={renameAccount}>✏️ Rename account</button>
+            <button className="reset-btn" onClick={switchAccount}>🔄 Switch account</button>
+            <button className="reset-btn" onClick={deleteAccount}>🗑️ Delete account</button>
           </>
         )}
       </div>

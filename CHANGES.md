@@ -4,6 +4,17 @@ A running log of completed changes, ordered most-recent first.
 
 ---
 
+## 2026-06-26
+
+### Multi-account system (per-household settings + data)
+
+- Questboard was single-tenant: the backend read/wrote two global files (`state.json`, `config.json`) with no notion of who was asking. Added an **account** layer so multiple households can share one deployment, each with isolated config and game state.
+- **Backend** (`backend/main.py`) — replaced JSON-file storage with **SQLite** (`questboard.db`), stdlib only (`sqlite3`/`hashlib`/`secrets`, no new dependency). New `accounts` table (name, optional PBKDF2-hashed PIN, per-account `config`/`state` JSON) and `sessions` table (random bearer tokens). New endpoints: `GET/POST /accounts`, `POST /accounts/{id}/login`, `GET/POST /account` (read/rename current), `DELETE /account`, `POST /logout`. The existing `/config` and `/state` are now scoped to the caller's session via an `Authorization: Bearer` header. On first startup, legacy `state.json`/`config.json` auto-migrate into a single "My Family" account (old files kept as backup).
+- **Frontend** — new `frontend/src/api.js` (token storage + `apiFetch`/`apiPost`, bounces to the picker on 401); new `frontend/src/components/AccountGate.jsx` (pick household / create / optional PIN entry). `frontend/src/App.jsx` now gates on auth, routes all fetches through `apiFetch`, and adds Rename / Switch / Delete account items to both header menus (delete requires typing the account name to confirm).
+- Verified backend endpoints (creation, isolation, PIN, logout/delete invalidation, migration) via FastAPI TestClient; `npm run build` passes; rebuilt Docker, live at `http://localhost:3062`.
+
+---
+
 ## 2026-06-11
 
 ### Distinct pixel icons + readable hamburger glyph for the header menu
