@@ -60,3 +60,20 @@ docker build -t questboard . && docker run -p 8099:8099 -v ./data:/data questboa
 ```
 
 The root `Dockerfile` builds the frontend and copies the dist into the image alongside the backend.
+
+## Propagation workflow
+
+"Do the propagation workflow" (a.k.a. "propagate") means take the current
+committed-ready changes all the way from local to live, in this order:
+
+1. **Commit** — stage and commit the working changes to `main` (work directly on
+   main, no branches). End the message with the `Co-Authored-By` trailer.
+2. **Rebuild Docker** — `docker-compose up --build -d` so the local container at
+   `localhost:3062` reflects the new source.
+3. **Push to GitHub** — `git push origin main`. This triggers the GitHub Actions
+   release workflow (build check → Docker → GHCR → Fly.io deploy).
+4. **Watch Fly.io** — follow the run with `gh run watch` (or `gh run list`) until
+   the deploy reports success on `questboard-dcmjs`. Report the final status.
+
+No manual `flyctl deploy` is needed — push to `main` auto-deploys. Version tags
+(`vX.Y.Z`) are only needed when cutting a GitHub Release.

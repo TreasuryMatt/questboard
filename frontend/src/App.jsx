@@ -924,10 +924,6 @@ export default function App() {
                : config?.uiScale === 'epic'   ? 1.75
                : 1;
 
-  // At Epic scale the full secondary toolbar (Sound/Settings/Reset/Export/
-  // Import) overflows the viewport, so collapse it into a hamburger menu.
-  const isEpic = config?.uiScale === 'epic';
-
   // Close the header menu on any outside click / Escape.
   useEffect(() => {
     if (!menuOpen) return;
@@ -1021,8 +1017,8 @@ export default function App() {
             <TileSprite tile={116} display={14} /> History
           </button>
         </div>
-        {isEpic ? (
-          <div className="header-menu">
+        <button className="mute-btn" onClick={() => { const next = !muted; setMuted(next); setMutedState(next); }} title={muted ? 'Unmute sounds' : 'Mute sounds'}>{muted ? '🔇' : '🔊'}</button>
+        <div className="header-menu">
             <button
               className="mute-btn menu-toggle"
               onClick={() => setMenuOpen(o => !o)}
@@ -1032,9 +1028,6 @@ export default function App() {
             ><span className="hamburger" /></button>
             {menuOpen && (
               <div className="header-dropdown">
-                <button onClick={() => { const next = !muted; setMuted(next); setMutedState(next); }}>
-                  {muted ? '\ud83d\udd07' : '\ud83d\udd0a'} {muted ? 'Unmute' : 'Mute'}
-                </button>
                 <button onClick={() => { setMenuOpen(false); setShowSettings(true); }}><TileSprite tile={65} display={14} /> Settings</button>
                 <button onClick={() => { setMenuOpen(false); resetWeek(); }}><TileSprite tile={56} display={14} /> Reset week</button>
                 <button onClick={() => { setMenuOpen(false); exportSave(); }}><TileSprite tile={91} display={14} /> Export Save</button>
@@ -1045,18 +1038,6 @@ export default function App() {
               </div>
             )}
           </div>
-        ) : (
-          <>
-            <button className="mute-btn" onClick={() => { const next = !muted; setMuted(next); setMutedState(next); }} title={muted ? 'Unmute sounds' : 'Mute sounds'}>{muted ? '\ud83d\udd07' : '\ud83d\udd0a'}</button>
-            <button className="reset-btn" onClick={() => setShowSettings(true)}><TileSprite tile={65} display={12} /> Settings</button>
-            <button className="reset-btn" onClick={resetWeek}><TileSprite tile={56} display={12} /> Reset week</button>
-            <button className="reset-btn" onClick={exportSave}><TileSprite tile={91} display={12} /> Export Save</button>
-            <button className="reset-btn" onClick={importSave}><TileSprite tile={89} display={12} /> Import Save</button>
-            <button className="reset-btn" onClick={renameAccount}>✏️ Rename account</button>
-            <button className="reset-btn" onClick={switchAccount}>🔄 Switch account</button>
-            <button className="reset-btn" onClick={deleteAccount}>🗑️ Delete account</button>
-          </>
-        )}
       </div>
 
       <div className="players">
