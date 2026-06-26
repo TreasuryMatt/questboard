@@ -191,6 +191,10 @@ export default function App() {
   const lastChoreAt = useRef(0);
   const comboRef = useRef(0);
   const [comboDisplay, setComboDisplay] = useState(0);
+  // Track viewport width so we can (a) neutralise the UI-scale zoom on phones
+  // and (b) size the dungeon grid to fit narrow screens.
+  const [vw, setVw] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 1280));
+  const isPhone = vw <= 640;
 
   const players = config?.players ?? [];
 
@@ -920,9 +924,14 @@ export default function App() {
   // UI scale: zoom the foreground content only, leaving the full-screen
   // dungeon background + torches at true viewport size (zooming <body> scaled
   // those too, breaking sprite/torch rendering at Heroic/Epic).
-  const uiZoom = config?.uiScale === 'heroic' ? 1.25
+  const uiZoom = isPhone ? 1
+               : config?.uiScale === 'heroic' ? 1.25
                : config?.uiScale === 'epic'   ? 1.75
                : 1;
+
+  // The dungeon viewport is 17 tiles wide; at 44px that's 748px and overflows a
+  // phone. On phones, shrink each tile so the whole grid fits the screen width.
+  const dungeonCell = isPhone ? Math.max(18, Math.floor((vw - 22) / 17)) : 44;
 
   // Close the header menu on any outside click / Escape.
   useEffect(() => {
@@ -944,6 +953,13 @@ export default function App() {
   useEffect(() => {
     document.body.classList.toggle('portrait', config?.displayOrientation === 'portrait');
   }, [config?.displayOrientation]);
+
+  // Track viewport width (rotation / resize) for phone-aware layout decisions.
+  useEffect(() => {
+    const onResize = () => setVw(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   if (!authed) {
     return (
@@ -1099,7 +1115,7 @@ export default function App() {
                 allPlayers={players}
                 allDungeonMaps={state.dungeonMaps}
                 onMove={(dx, dy) => handleDungeonMove(selected, dx, dy)}
-                cellSize={44}
+                cellSize={dungeonCell}
               />
             : <div className="no-select">Select a hero above to explore the dungeon.</div>
         )}

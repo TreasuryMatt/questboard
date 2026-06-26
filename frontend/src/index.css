@@ -1887,3 +1887,67 @@ body.portrait .chore-sections { grid-template-columns: 1fr; }
   align-items: center;
   gap: 10px;
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   PHONE LAYOUT — device-width responsive overrides
+   Everything below is ADDITIVE and scoped to ≤640px, so the tablet
+   (641–1400px) and desktop (>1400px) layouts above are left untouched.
+   Driven by real viewport width (not the opt-in `body.portrait` kiosk mode),
+   so phones get this automatically.
+   ────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* Kill the 300ms tap delay and the grey tap-flash on touch */
+  * { -webkit-tap-highlight-color: transparent; }
+  button, .tab, .chore, .player-card, .reset-btn, .mute-btn, .menu-toggle,
+  .history-filter-btn, .bounty-post-btn, .bounty-claim-btn, .bounty-cancel-btn,
+  .bounty-icon-btn, .bounty-submit-btn { touch-action: manipulation; }
+
+  /* Tighter gutters → more usable width */
+  body { padding: 0.4rem 0.55rem; }
+  .board { max-width: 100%; }
+
+  /* Header: title (+ controls) on row 1, full-width tabs on row 2 */
+  .header { flex-wrap: wrap; gap: 8px 10px; }
+  .title { font-size: 16px; }
+  .tabs { order: 10; flex-basis: 100%; }
+  .tab { padding: 10px 0; min-height: 40px; }
+
+  /* Single-column roster (chosen for readability + tap size on phones) */
+  .players { grid-template-columns: 1fr; }
+
+  /* Stack the Chores / Rewards columns instead of side-by-side */
+  .chore-sections { grid-template-columns: 1fr; gap: 1rem; }
+  .chores { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+  .rewards { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+
+  /* Comfortable tap targets for tiles + header buttons */
+  .chore { padding: 11px; }
+  .reset-btn, .mute-btn, .menu-toggle { min-height: 38px; }
+
+  /* Pressed-state feedback — :hover does nothing on touch */
+  .player-card:active { border-color: var(--border2); }
+  .chore:active { filter: brightness(1.25); }
+  .tab:active { color: var(--gold2); }
+  .reset-btn:active { color: var(--gold2); border-color: var(--gold-border); }
+
+  /* Dynamic viewport height so the browser's address bar doesn't clip overlays */
+  .celebration-overlay { height: 100dvh; }
+
+  /* Keep the toast on-screen on narrow widths */
+  .toast { max-width: 92vw; white-space: normal; text-align: center; }
+
+  /* Dungeon tab: stack the grid above its legend/status sidebars instead of
+     a 3-column row (the grid itself is shrunk to fit via the cellSize prop). */
+  .dmap-tab-layout { flex-direction: column; gap: 14px; padding: 10px 0; min-height: 0; }
+  .dmap-center { order: 1; width: 100%; }
+  .dmap-sidebar { order: 2; width: 100%; min-width: 0; }
+  .dmap-grid { margin: 0 auto; }
+  .dmap-btn { min-width: 44px; min-height: 44px; }
+}
+
+/* Extra squeeze for very small phones (iPhone SE-class, ~360px and below) */
+@media (max-width: 380px) {
+  .title { font-size: 14px; }
+  .tab { font-size: 10px; gap: 3px; }
+  .chores { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+}

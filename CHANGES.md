@@ -6,6 +6,14 @@ A running log of completed changes, ordered most-recent first.
 
 ## 2026-06-26
 
+### Make the UI usable on phones (small-screen responsive pass)
+
+- Questboard had almost no device-width responsiveness: the only media query (`max-width: 1400px`) just hid the torches, and the one "narrow" layout (`body.portrait`) was opt-in via a config setting, not driven by the actual screen. A phone got the full desktop layout — 3-column roster, 2-column chores, and a **748px-wide dungeon grid** that overflowed the viewport.
+- **Design principle:** every change is additive and scoped to `@media (max-width: 640px)` / `(max-width: 380px)` appended at the end of the stylesheet. Base rules are untouched, so tablet (641–1400px) and desktop (>1400px) are provably unchanged (verified via CSSOM: base `.players` is still `repeat(3, 1fr)`, `.chore-sections` still `1fr 1fr`).
+- `frontend/src/index.css` — phone breakpoints: single-column player roster, stacked Chores/Rewards, full-width tab row on a second header line, tighter gutters; touch ergonomics (`touch-action: manipulation`, removed tap-delay/grey-flash, `:active` pressed states, ≥38–44px tap targets); `100dvh` celebration overlay and a width-constrained toast; and the dungeon tab stacks its legend/status/party sidebars below the grid.
+- `frontend/src/App.jsx` — track viewport width (rotation/resize); neutralise the Heroic/Epic UI-scale `zoom` on phones (it would multiply an already-tight layout off-screen); and size the 17-tile dungeon grid to fit narrow screens via a computed `cellSize` (`max(18, floor((vw-22)/17))`) instead of a fixed 44px.
+- Verified with `npm run build`; driven live at 390px in a real browser (no horizontal overflow, all tabs reflow, dungeon grid fits); rebuilt Docker, live at `http://localhost:3062`.
+
 ### Fix settings list scrolling back to the top on every edit
 
 - In **Edit Settings → Quests/Rewards**, changing any per-row control (the everyone/adults/kids switcher, points, ALL/1P, gold cost) made the list jump back to the top, so you couldn't adjust several rows in a row.
