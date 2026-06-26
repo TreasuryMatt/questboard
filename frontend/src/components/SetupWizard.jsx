@@ -331,6 +331,7 @@ function ChoreSection({ players, enabledChores, onToggle, choreOverrides, onOver
 
     return (
       <div
+        key={chore.id}
         style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid #1e1e3a', opacity: dim ? 0.4 : 1, cursor: 'pointer' }}
         onClick={() => !isCustom && onToggle(chore.id)}
       >
@@ -370,20 +371,20 @@ function ChoreSection({ players, enabledChores, onToggle, choreOverrides, onOver
               else chores.filter(c => !enabledChores.has(c.id)).forEach(c => onToggle(c.id));
             }}>{allOn ? 'none' : 'all'}</button>
         </div>
-        {chores.map(c => <ChoreRow key={c.id} chore={c} />)}
+        {chores.map(c => ChoreRow({ chore: c }))}
       </div>
     );
   }
 
   return (
     <div>
-      <Section title="DAILY" chores={daily} />
-      <Section title="WEEKLY" chores={weekly} />
-      <Section title="MONTHLY" chores={monthly} />
+      {Section({ title: 'DAILY', chores: daily })}
+      {Section({ title: 'WEEKLY', chores: weekly })}
+      {Section({ title: 'MONTHLY', chores: monthly })}
       {customChores.length > 0 && (
         <div style={{ marginBottom: 20 }}>
           <span style={{ color: '#f5c870', fontSize: 11, letterSpacing: 1 }}>CUSTOM</span>
-          {customChores.map(c => <ChoreRow key={c.id} chore={c} isCustom />)}
+          {customChores.map(c => ChoreRow({ chore: c, isCustom: true }))}
         </div>
       )}
       {addingCustom ? (
@@ -460,6 +461,7 @@ function RewardSection({ players, enabledRewards, onToggle, rewardOverrides, onO
 
     return (
       <div
+        key={reward.id}
         style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid #1e1e3a', opacity: dim ? 0.4 : 1, cursor: 'pointer' }}
         onClick={() => !isCustom && onToggle(reward.id)}
       >
@@ -490,7 +492,7 @@ function RewardSection({ players, enabledRewards, onToggle, rewardOverrides, onO
     if (!tier.length) return null;
     const allOn = tier.every(r => enabledRewards.has(r.id));
     return (
-      <div style={{ marginBottom: 20 }}>
+      <div key={label} style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <span style={{ color: '#f5c870', fontSize: 11, letterSpacing: 1 }}>{label}</span>
           <button style={{ ...S.btn, padding: '2px 8px', fontSize: 10 }}
@@ -499,20 +501,18 @@ function RewardSection({ players, enabledRewards, onToggle, rewardOverrides, onO
               else tier.filter(r => !enabledRewards.has(r.id)).forEach(r => onToggle(r.id));
             }}>{allOn ? 'none' : 'all'}</button>
         </div>
-        {tier.map(r => <RewardRow key={r.id} reward={r} />)}
+        {tier.map(r => RewardRow({ reward: r }))}
       </div>
     );
   }
 
   return (
     <div>
-      {REWARD_TIERS.map((t, i) => (
-        <TierSection key={t.label} label={t.label} max={t.max} prev={REWARD_TIERS[i - 1]?.max} />
-      ))}
+      {REWARD_TIERS.map((t, i) => TierSection({ label: t.label, max: t.max, prev: REWARD_TIERS[i - 1]?.max }))}
       {customRewards.length > 0 && (
         <div style={{ marginBottom: 20 }}>
           <span style={{ color: '#f5c870', fontSize: 11, letterSpacing: 1 }}>CUSTOM</span>
-          {customRewards.map(r => <RewardRow key={r.id} reward={r} isCustom />)}
+          {customRewards.map(r => RewardRow({ reward: r, isCustom: true }))}
         </div>
       )}
       {addingCustom ? (
