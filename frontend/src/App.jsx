@@ -874,17 +874,27 @@ export default function App() {
   }, [accountName, showToast]);
 
   const handleEditComplete = useCallback(async (wizardConfig) => {
-    const newIds = new Set(wizardConfig.players.map(p => p.id));
-    const zeros = Object.fromEntries(wizardConfig.players.map(p => [p.id, 0]));
+    // goldEdits is a manual override map keyed by player id; it belongs in
+    // state, not config, so pull it out before persisting the config.
+    const { goldEdits = {}, ...configToSave } = wizardConfig;
+    const newIds = new Set(configToSave.players.map(p => p.id));
+    const zeros = Object.fromEntries(configToSave.players.map(p => [p.id, 0]));
 
     const keep = (obj) => ({
       ...zeros,
       ...Object.fromEntries(Object.entries(obj || {}).filter(([id]) => newIds.has(id))),
     });
 
+    // Overlay manual gold edits onto the surviving gold values.
+    const goldOverrides = Object.fromEntries(
+      Object.entries(goldEdits)
+        .filter(([id]) => newIds.has(id))
+        .map(([id, v]) => [id, Math.max(0, Math.floor(Number(v) || 0))])
+    );
+
     const mergedState = {
       ...serverState,
-      gold: keep(serverState.gold),
+      gold: { ...keep(serverState.gold), ...goldOverrides },
       xp: keep(serverState.xp),
       streaks: keep(serverState.streaks),
       overkillCharge: keep(serverState.overkillCharge || {}),
@@ -892,11 +902,11 @@ export default function App() {
     };
 
     await Promise.all([
-      apiPost('/config', wizardConfig),
+      apiPost('/config', configToSave),
       apiPost('/state', mergedState),
     ]);
 
-    setConfig(wizardConfig);
+    setConfig(configToSave);
     setServerState(mergedState);
     setShowSettings(false);
   }, [serverState]);
@@ -975,6 +985,7 @@ export default function App() {
         {(config?.animatedBg !== false) && <DungeonBackground />}
         <SetupWizard
           initialConfig={config}
+          initialGold={serverState?.gold}
           onComplete={handleEditComplete}
           onCancel={() => setShowSettings(false)}
         />

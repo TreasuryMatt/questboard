@@ -630,7 +630,7 @@ function StepRewardSelect({ players, enabledRewards, onToggle, rewardOverrides, 
 }
 
 // ── Edit tab: Party ───────────────────────────────────────────────────────────
-function TabParty({ players, onUpdatePlayer, onAddPlayer, onRemovePlayer }) {
+function TabParty({ players, onUpdatePlayer, onAddPlayer, onRemovePlayer, goldEdits, onSetGold }) {
   const [expandedIdx, setExpandedIdx] = useState(null);
 
   return (
@@ -720,6 +720,20 @@ function TabParty({ players, onUpdatePlayer, onAddPlayer, onRemovePlayer }) {
                     <span style={{ color: '#c8d0e0', fontSize: 12 }}>Pause gold penalties</span>
                     <span style={{ color: '#5a5a8a', fontSize: 10 }}>(away from home)</span>
                   </label>
+                </div>
+                <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <label style={{ color: '#c8d0e0', fontSize: 12 }}>Gold</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={goldEdits?.[p.id] ?? 0}
+                    onChange={e => {
+                      const n = Math.max(0, Math.floor(Number(e.target.value) || 0));
+                      onSetGold(p.id, n);
+                    }}
+                    style={{ ...S.input, width: 90, padding: '6px 8px', fontSize: 13 }}
+                  />
+                  <span style={{ color: '#5a5a8a', fontSize: 10 }}>(applied on save)</span>
                 </div>
               </div>
             )}
@@ -893,7 +907,7 @@ function TabDisplay({ crtEnabled, onToggleCrt, uiScale, onChangeUiScale, animate
 }
 
 // ── Main wizard ───────────────────────────────────────────────────────────────
-export default function SetupWizard({ onComplete, onCancel, initialConfig }) {
+export default function SetupWizard({ onComplete, onCancel, initialConfig, initialGold }) {
   const isEdit = !!initialConfig;
 
   const [step, setStep] = useState(isEdit ? 'tabs' : 0);
@@ -920,6 +934,13 @@ export default function SetupWizard({ onComplete, onCancel, initialConfig }) {
     initialConfig?.powerUpSettings ?? { ...DEFAULT_POWER_UP_SETTINGS }
   );
   const [launching, setLaunching] = useState(false);
+  // Manual gold edits, keyed by player id. Only applied on Save (see
+  // handleEditComplete in App.jsx). Gold lives in serverState, not config.
+  const [goldEdits, setGoldEdits] = useState(() => ({ ...(initialGold ?? {}) }));
+
+  function setPlayerGold(id, val) {
+    setGoldEdits(prev => ({ ...prev, [id]: val }));
+  }
 
   function handlePlayerCount(n) {
     setPlayers(prev => {
@@ -991,6 +1012,7 @@ export default function SetupWizard({ onComplete, onCancel, initialConfig }) {
       confirmChores,
       powerUpSettings,
       displayOrientation,
+      goldEdits,
     });
   }
 
@@ -1033,6 +1055,8 @@ export default function SetupWizard({ onComplete, onCancel, initialConfig }) {
                 onUpdatePlayer={updatePlayerAt}
                 onAddPlayer={() => setPlayers(prev => [...prev, makeNewPlayer(prev)])}
                 onRemovePlayer={idx => setPlayers(prev => prev.filter((_, i) => i !== idx))}
+                goldEdits={goldEdits}
+                onSetGold={setPlayerGold}
               />
             ) : activeTab === 'quests' ? (
               <ChoreSection

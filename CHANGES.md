@@ -6,6 +6,14 @@ A running log of completed changes, ordered most-recent first.
 
 ## 2026-06-26
 
+### Manually set a player's gold in Edit Settings
+
+- Added a **Gold** number field to **Edit Settings → Party**, inside each player's expanded row, directly below the "Pause gold penalties" checkbox.
+- Gold isn't stored on the player object — it lives in `serverState.gold` (a `{ playerId: amount }` map). Rather than add a new endpoint or write live, the edit is threaded through the existing save path so it only commits when you hit **Save**, like every other setting in that panel.
+- `frontend/src/components/SetupWizard.jsx` — new `initialGold` prop and a `goldEdits` draft map; the field is pre-filled with current gold, clamps to whole numbers ≥ 0, and is passed to `TabParty`. `goldEdits` rides along on the object handed to `onComplete`.
+- `frontend/src/App.jsx` — pass `initialGold={serverState?.gold}` into the edit-mode `SetupWizard`; in `handleEditComplete`, strip `goldEdits` out before persisting config (it belongs in state, not config) and overlay the sanitized values onto the surviving gold map. Combat, rewards, and overnight penalties are untouched — they still read `serverState.gold` as before.
+- Verified with `npm run build`; rebuilt Docker, live at `http://localhost:3062`.
+
 ### Multi-account system (per-household settings + data)
 
 - Questboard was single-tenant: the backend read/wrote two global files (`state.json`, `config.json`) with no notion of who was asking. Added an **account** layer so multiple households can share one deployment, each with isolated config and game state.
